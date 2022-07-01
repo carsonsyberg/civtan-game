@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+    html,
+    body {
+      background-color: #a98850;
+    }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/phaser@3.15.1/dist/phaser-arcade-physics.min.js"></script>
+<script>
+
+// ENUMS
+const Biomes = {
+    Fog: 0,
+    Desert: 1,
+    Dirt: 2,
+    Clay: 3,
+    Mountain: 4,
+    Plains: 5,
+    Forest: 6,
+    Water: 7,
+    Ocean: 8,
+    Cursed: 9
+}
+
+var window_width = 1520;
+var window_height = 735;
+
+var config = {
+    type: Phaser.AUTO,
+    parent: 'phaser-example',
+    width: window_width,
+    height: window_height,
+    physics: {
+        default: 'arcade',
+    },
+    scene: {
+        preload: preload,
+        create: create,
+        update: update
+    }
+};
+
+var game = new Phaser.Game(config);
+var tiles = [];
+var cities = [];
+var roads = [];
+
+var cursors;
+
+/********************************************************************
+                Game Object: Tiles
+********************************************************************/
+class Tile extends Phaser.GameObjects.Image {
+    constructor(scene, x, y, row, col, tile_image, light_tile, regular_tile, resources, values, is_hovered) {
+
+        // gives the image its location and tag so it knows what pic to choose
+        super(scene, x, y, tile_image);
+
+        // things each tile will need
+            // an x_pos and y_pos to show where to display it
+            // list of resources on the tile
+            // list of values of said resources
+            // list of improvements
+            // 
+
+        this.light_tile_image = light_tile;
+        this.regular_tile_image = regular_tile;
+            
+        this.col_pos = col;
+        this.row_pos = row;
+        
+        this.resource_list = resources;
+        this.value_list = values;
+
+        this.is_hovered_on = is_hovered;
+
+        this.setInteractive();
+    }
+
+    update () {
+        if(this.is_hovered_on) {
+            this.setTexture(this.light_tile_image);
+        }
+        else {
+            this.setTexture(this.regular_tile_image);
+        }
+    }
+}/******************************************************************
+********************************************************************
+********************************************************************/
+
+/********************************************************************
+                Game Object: Cities
+********************************************************************/
+class City extends Phaser.GameObjects.Image {
+    constructor(scene, x, y, row, col, city_image, improvements) {
+
+        // gives the image its location and tag so it knows what pic to choose
+        super(scene, x, y, city_image);
+
+        // things each tile will need
+            // an x_pos and y_pos to show where to display it
+            // list of resources on the tile
+            // list of values of said resources
+            // list of improvements
+            // 
+
+        this.col_pos = col;
+        this.row_pos = row;
+        
+        this.improvement_list = improvements;
+
+        this.setInteractive();
+    }
+
+    update () {
+        
+    }
+}/******************************************************************
+********************************************************************
+********************************************************************/
+
+var image;
+var tile_width = 230;
+var tile_height = 200;
+var num_rows = 9;
+var num_cols = 9;
+var num_city_rows = num_rows - 2;
+var num_city_cols = 2*num_cols - 2;
+var tile_grid_x = 0;
+var tile_grid_y = 0;
+var city_grid_x = tile_grid_x + 0.25*tile_width;
+var city_grid_y = tile_grid_y + 0.5*tile_height;
+
+var cam;
+var side_menu_image;
+
+function preload () {
+
+    this.load.image('fog_tile', '../assets/civtan_items/images/tiles/fog_tile.png');
+    this.load.image('border_tile', '../assets/civtan_items/images/tiles/border_tile.png');
+    this.load.image('clay_tile', '../assets/civtan_items/images/tiles/clay_tile.png');
+    this.load.image('desert_tile', '../assets/civtan_items/images/tiles/desert_tile.png');
+    this.load.image('dirt_tile', '../assets/civtan_items/images/tiles/dirt_tile.png');
+    this.load.image('forest_tile', '../assets/civtan_items/images/tiles/forest_tile.png');
+    this.load.image('mountain_tile', '../assets/civtan_items/images/tiles/mountain_tile.png');
+    this.load.image('ocean_tile', '../assets/civtan_items/images/tiles/ocean_tile.png');
+    this.load.image('plains_tile', '../assets/civtan_items/images/tiles/plains_tile.png');
+    this.load.image('water_tile', '../assets/civtan_items/images/tiles/water_tile.png');
+    this.load.image('cursed_tile', '../assets/civtan_items/images/tiles/cursed_tile.png');
+
+    this.load.image('light_clay_tile', '../assets/civtan_items/images/tiles/light_clay_tile.png');
+    this.load.image('light_desert_tile', '../assets/civtan_items/images/tiles/light_desert_tile.png');
+    this.load.image('light_dirt_tile', '../assets/civtan_items/images/tiles/light_dirt_tile.png');
+    this.load.image('light_forest_tile', '../assets/civtan_items/images/tiles/light_forest_tile.png');
+    this.load.image('light_mountain_tile', '../assets/civtan_items/images/tiles/light_mountain_tile.png');
+    this.load.image('light_ocean_tile', '../assets/civtan_items/images/tiles/light_ocean_tile.png');
+    this.load.image('light_plains_tile', '../assets/civtan_items/images/tiles/light_plains_tile.png');
+    this.load.image('light_water_tile', '../assets/civtan_items/images/tiles/light_water_tile.png');
+    this.load.image('light_cursed_tile', '../assets/civtan_items/images/tiles/light_cursed_tile.png');
+    
+    this.load.image('village', '../assets/village.png');
+    this.load.image('side_menu', '../assets/civtan_items/images/side_menu.png');
+
+}
+
+function create() {
+
+
+
+    // image = this.add.image(window_width/2, window_height/2, 'logo').setScale(0.4);
+    // var test1 = this.add.image(window_width/2 + 0.70*tile_width, window_height/2 + 0.47*tile_height, 'logo').setScale(0.4);
+    // var test2 = this.add.image(window_width/2 + 0.70*tile_width, window_height/2 - 0.47*tile_height, 'logo').setScale(0.4);
+                                        //scene, x, y, col, row, tilename, resources, values)
+
+
+    setup_camera(this);
+    // create_fog_tiles(this);
+    create_tiles(this);
+    tile_activation();
+
+    // TODO: ADD BACK IN!
+    // side_menu_image = this.add.image(this.cameras.main.worldView.x + 0.5*window_width, this.cameras.main.worldView.y + 0.5*window_height, 'side_menu');
+
+    
+
+    // place_tiles(this);
+
+    // place_cities(this);
+
+    // this.input.on('pointerdown', function (pointer) {
+
+    //     console.log('down at point: (' + pointer.x + ', ' + pointer.y + ')');
+    //     // image.x = pointer.x;
+    //     // image.y = pointer.y;
+
+    // }, this);
+
+}    
+
+function update(time, delta) {
+
+    // display side_menu
+    // display_side_menu(this);
+    
+    // console.log("Cam X: " + this.cameras.main.worldView.x + " || Cam Y: " + this.cameras.main.worldView.y + "\n");
+    
+    for(let tile_index = 0; tile_index < tiles.length; tile_index++) {
+        tiles[tile_index].update();
+    }
+
+    controls.update(delta);
+}
+
+function display_side_menu(scene) {
+    if (cursors.up.isDown)
+    {
+        side_menu_image.y = scene.cameras.main.worldView.y + 0.5*window_height - 16;
+    }
+    else if (cursors.down.isDown)
+    {
+        side_menu_image.y = scene.cameras.main.worldView.y + 0.5*window_height + 16;
+    }
+    else {
+        side_menu_image.y = scene.cameras.main.worldView.y + 0.5*window_height;
+    }
+
+    if (cursors.left.isDown)
+    {
+        side_menu_image.x = scene.cameras.main.worldView.x + 0.5*window_width - 16;
+    }
+    else if (cursors.right.isDown)
+    {
+        side_menu_image.x = scene.cameras.main.worldView.x + 0.5*window_width + 16;
+    }
+    else {
+        side_menu_image.x = scene.cameras.main.worldView.x + 0.5*window_width;
+    }
+}
+
+function place_cities(scene) {
+    var city_x = city_grid_x;
+    var city_y = city_grid_y;
+    var prev_city_y = city_y;
+
+    let counter = 0;
+    var is_low = true;
+
+    scene.add.image(city_grid_x, city_grid_y, 'village').setScale(0.25);
+
+    // loop through grid of hexagon vertices, column by column
+    console.log('Num Cols: ' + num_city_cols + ', Num Rows: ' + num_city_rows);
+    for(let col = 0; col < num_city_cols; col++) {
+
+        // loop through grid of hexagon vertices, row by row
+        for(let row = 0; row < num_city_rows+1; row++) {
+            // if on the first or last column only need (num_city_rows - 1) rows
+            // if(col == 0 || col == (num_city_cols-1))
+            //     row = 1;
+            
+            // display a city
+            if(!((col == 0 && row == num_city_rows) || (col == num_city_cols-1 && row == num_city_rows)))
+                scene.add.image(city_x, city_y, 'village').setScale(0.25);
+
+            // increment city_y by tile_height
+            city_y = city_y + 0.96*tile_height;
+        }
+
+        // need to reset city_y and increment city_x
+        // if first col, reset city_y to city_grid_y - 0.5*tile_height (increment x by slant length)
+        if(col == 0) {
+            city_y = city_grid_y - 0.5*tile_height;
+            city_x += 0.25*tile_width;
+            is_low = !is_low;
+        }
+        else if(col == num_city_cols-1) {
+            // if before last col, reset city_y to city_grid_y if odd # of tiles (increment x by slant length)
+            // if before last col, reset city_y to city_grid_y + 0.5*tile_height if even # tiles (increment x by slant length)
+            if(num_city_cols % 2 == 0)
+                city_y = city_grid_y + 0.5*tile_height;
+            else
+                city_y = city_grid_y;
+            city_x += 0.25*tile_width;
+        }
+        else { // if somewhere inbetween
+            // if odd col reset to previous city_y (increment x by side length)
+            // if even col && is_low reset to city_grid_y - 0.5*tile_height (also increment x by slant length)
+            // if even col && !is_low reset to city_grid_y (also increment x by slant length)
+            if(col % 2 == 0 && is_low) {
+                city_y = city_grid_y - 0.5*tile_height;
+                city_x += 0.25*tile_width
+                is_low = !is_low;
+            }
+            else if(col % 2 == 0 && !is_low) {
+                city_y = city_grid_y;
+                city_x += 0.25*tile_width
+                is_low = !is_low;
+            }
+            else {
+                city_y = prev_city_y;
+                city_x += 0.45*tile_width;
+            }
+
+        }
+
+        prev_city_y = city_y;
+       
+    }
+
+    // for each city on our list, need to place it at the x and y coords associated with its (col, row) coordinate
+    // for(let city_index = 0; city_index < cities.length; city_index++) {
+
+    //     // need to reset these after going through whole grid
+    //     city_x = city_grid_x;
+    //     city_y = city_grid_y;
+    //     counter = 0;
+
+    //     // loop through grid of hexagon vertices, column by column
+    //     for(let col = 0; col < num_city_cols; col++) {
+
+    //         // loop through grid of hexagon vertices, row by row
+    //         for(let row = 0; row < num_city_rows; row++) {
+    //             // if on the first or last column only need (num_city_rows - 1) rows
+    //             if(col == 0 || col == (num_city_cols-1))
+    //                 row++; // makes loop run 1 less time if first or last column
+                
+    //             // display a city
+    //             scene.add.image(city_x, city_y, 'village');
+
+    //             // increment city_y by tile_height
+    //             city_y = city_y + tile_height;
+    //         }
+
+    //         // need to reset city_y and increment city_x
+    //         // if first col, reset city_y to city_grid_y - 0.5*tile_height (increment x by slant length)
+    //         // if before last col, reset city_y to city_grid_y if odd # of tiles (increment x by slant length)
+    //         // if before last col, reset city_y to city_grid_y + 0.5*tile_height if even # tiles (increment x by slant length)
+
+    //         // if somewhere inbetween
+    //             // if odd col reset to previous city_y (increment x by side length)
+    //             // if even col && is_low reset to city_grid_y - 0.5*tile_height (also increment x by slant length)
+    //             // if even col && !is_low reset to city_grid_y (also increment x by slant length)
+    //     }
+        
+    // }
+}
+
+function place_tiles(scene) {
+    var tile_x = tile_grid_x;
+    var tile_y = tile_grid_y;
+
+    let counter = 0;
+
+    // for each tile in our list, need to place it at the x and y coords associated with its (col, row) coordinate
+    for(let tile_index = 0; tile_index < tiles.length; tile_index++) {
+
+        // need to reset these after going through whole grid
+        tile_x = tile_grid_x;
+        tile_y = tile_grid_y;
+        counter = 0;
+
+        // loop through grid of hexagons, column by column
+        for(let col = 0; col < num_cols; col++) {
+            // loop through num_rows hexagons per column 
+            for(let row = 0; row < num_rows; row++) {
+                // if (row, col) matches, update tiles (x,y) to match
+                if(row == tiles[tile_index].row_pos && col == tiles[tile_index].col_pos) {
+                    tiles[tile_index].x = tile_x;
+                    tiles[tile_index].y = tile_y;
+                    tiles[tile_index].setScale(0.4);
+                    tiles[tile_index].on('pointerup', function (pointer) {  
+                        console.log('Touching tile (' + tile_index + ')');
+                        console.log('(row, col) : (' + tiles[tile_index].row_pos + ', ' + tiles[tile_index].col_pos + ')');
+                    })
+                }
+
+                // all will have same x value, only need to increment y
+                tile_y += 0.96*tile_height;
+            }
+
+            counter++;
+
+            // after all tiles of a column created, need to reset y and increment x
+            if(counter % 2 == 0) {
+                // if on 0 or even # column, y is reset to grid_y
+                tile_y = tile_grid_y;
+            }
+            else {
+                // if on odd # column, y is reset to grid_y - 0.47*tile_height
+                // tile_y = tile_grid_y - 0.47*tile_height;
+                tile_y = tile_grid_y - 0.5*tile_height;
+            }
+
+            tile_x += 0.70*tile_width;
+
+        }
+    }
+}
+
+function setup_camera(scene) {
+
+    // scene.cameras.main.setBounds(0, -50, (num_cols-8)*tile_width - 50, (num_rows-1)*tile_height - 140);
+    // scene.cameras.main.setBounds(0, -50, 17*tile_width - 50, 24*tile_height - 140);
+    
+    cursors = scene.input.keyboard.createCursorKeys();
+
+    cam = scene.cameras.main;
+
+    // var controlConfig = {
+    //     camera: cam,
+    //     left: cursors.left,
+    //     right: cursors.right,
+    //     up: cursors.up,
+    //     down: cursors.down,
+    //     acceleration: 2,
+    //     drag: 10,
+    //     maxSpeed: 1.0
+    // };
+
+    var controlConfig = {
+        camera: cam,
+        left: cursors.left,
+        right: cursors.right,
+        up: cursors.up,
+        down: cursors.down,
+        speed: { x: 1, y: 1 }
+    }
+
+    // controls = new Phaser.Cameras.Controls.SmoothedKeyControl(controlConfig);
+    controls = new Phaser.Cameras.Controls.FixedKeyControl(controlConfig);
+
+}
+
+function create_fog_tiles(scene) {
+
+    var tile_x = tile_grid_x;
+    var tile_y = tile_grid_y;
+
+    let counter = 0;
+    var image_to_add;
+
+    // create grid of hexagons, column by column
+    for(let col = 0; col < num_cols; col++) {
+        // create num_rows hexagons per column 
+        for(let row = 0; row < num_rows; row++) {
+            // all will have same x value, only need to increment y
+            if(row == 0 || row == num_rows-1 || col == 0 || col == num_cols-1) {
+                image_to_add = 'border_tile'; // means top, bottom, left or right border tile
+                // 
+            }
+            else {
+                image_to_add = 'fog_tile';  // means somewhere in between
+
+            }
+
+            scene.add.image(tile_x, tile_y, image_to_add).setScale(0.4);
+            tile_y += 0.96*tile_height;
+        }
+
+        counter++;
+
+        // after all tiles of a column created, need to reset y and increment x
+        if(counter % 2 == 0) {
+            // if on 0 or even # column, y is reset to grid_y
+            tile_y = tile_grid_y;
+        }
+        else {
+            // if on odd # column, y is reset to grid_y - 0.47*tile_height
+            tile_y = tile_grid_y - 0.47*tile_height;
+        }
+
+        tile_x += 0.73*tile_width;
+
+    }
+}
+
+function create_tiles(scene) {
+
+    var tile_x = tile_grid_x;
+    var tile_y = tile_grid_y;
+
+    let counter = 0;
+    var image_to_add;
+
+    // create grid of hexagons, column by column
+    for(let col = 0; col < num_cols; col++) {
+        // create num_rows hexagons per column 
+        for(let row = 0; row < num_rows; row++) {
+            // all will have same x value, only need to increment y
+            if(row == 0 || row == num_rows-1 || col == 0 || col == num_cols-1) {
+                // means top, bottom, left or right border tile
+                scene.add.image(tile_x, tile_y, 'border_tile').setScale(0.4);
+            }
+            else {
+                // select random biome (1 to 9 at the moment)
+                var tile_image;
+                var light_tile;
+
+                // to generate biome_num -> get number from 1 to 100
+                // if number in [1,2] -> Cursed
+                // if number in [3, 7] -> Desert
+                // if number in [8, 14] -> Mountain
+                // if number in [15, 24] -> Dirt
+                // if number in [25, 34] -> Clay
+                // if number in [35, 44] -> Water
+                // if number in [45, 57] -> Forest
+                // if number in [58, 70] -> Plains
+                // if number in [71, 100] -> Ocean
+
+                var num_in_100 = Math.floor(Math.random() * 100) + 1;
+                if(num_in_100 == 1 && num_in_100 == 2) {
+                    biome_num = Biomes.Cursed;
+                }
+                else if(num_in_100 >= 3 && num_in_100 <= 7) {
+                    biome_num = Biomes.Desert;
+                }
+                else if(num_in_100 >= 8 && num_in_100 <= 14) {
+                    biome_num = Biomes.Mountain;
+                }
+                else if(num_in_100 >= 15 && num_in_100 <= 24) {
+                    biome_num = Biomes.Dirt;
+                }
+                else if(num_in_100 >= 25 && num_in_100 <= 34) {
+                    biome_num = Biomes.Clay;
+                }
+                else if(num_in_100 >= 35 && num_in_100 <= 44) {
+                    biome_num = Biomes.Water;
+                }
+                else if(num_in_100 >= 45 && num_in_100 <= 57) {
+                    biome_num = Biomes.Forest;
+                }
+                else if(num_in_100 >= 58 && num_in_100 <= 70) {
+                    biome_num = Biomes.Plains;
+                }
+                else {
+                    biome_num = Biomes.Ocean;
+                }
+
+                var biome_num = Math.floor(Math.random() * 9) + 1;
+                switch(biome_num) {
+                    case 0:
+                        tile_image = 'fog_tile';
+                        light_tile = 'fog_tile';
+                        break;
+                    case Biomes.Desert:
+                        tile_image = 'desert_tile';
+                        light_tile = 'light_desert_tile';
+                        break;
+                    case Biomes.Dirt:
+                        tile_image = 'dirt_tile';
+                        light_tile = 'light_dirt_tile';
+                        break;
+                    case Biomes.Clay:
+                        tile_image = 'clay_tile';
+                        light_tile = 'light_clay_tile';
+                        break;
+                    case Biomes.Mountain:
+                        tile_image = 'mountain_tile';
+                        light_tile = 'light_mountain_tile';
+                        break;
+                    case Biomes.Plains:
+                        tile_image = 'plains_tile';
+                        light_tile = 'light_plains_tile';
+                        break;
+                    case Biomes.Forest:
+                        tile_image = 'forest_tile';
+                        light_tile = 'light_forest_tile';
+                        break;
+                    case Biomes.Water:
+                        tile_image = 'water_tile';
+                        light_tile = 'light_water_tile';
+                        break;
+                    case Biomes.Ocean:
+                        tile_image = 'ocean_tile';
+                        light_tile = 'light_ocean_tile';
+                        break;
+                    case Biomes.Cursed:
+                        tile_image = 'cursed_tile';
+                        light_tile = 'light_cursed_tile';
+                        break;
+                    default:
+                        tile_image = 'border_tile';
+                        light_tile = 'border_tile';
+                }
+
+                // select random resources
+                // select random resource amounts
+
+                // create tile object
+                // add tile object to tiles[] list
+                                                    //(scene,    x,      y,   row, col, tile_image, light_tile, regular_tile, resources, values, is_hovered)
+                tiles.push(scene.add.existing(new Tile(scene, tile_x, tile_y, row, col, tile_image, light_tile, tile_image, 0, 0, 0)).setScale(0.4));
+
+                // tile interactions added after all tiles generated
+            }
+
+            tile_y += 0.96*tile_height;
+        }
+
+        counter++;
+
+        // after all tiles of a column created, need to reset y and increment x
+        if(counter % 2 == 0) {
+            // if on 0 or even # column, y is reset to grid_y
+            tile_y = tile_grid_y;
+        }
+        else {
+            // if on odd # column, y is reset to grid_y - 0.47*tile_height
+            tile_y = tile_grid_y - 0.47*tile_height;
+        }
+
+        tile_x += 0.73*tile_width;
+
+    }
+}
+
+function tile_activation() {
+
+    // for each tile in list of tiles -> make interactive and add functions on click/hover
+    for(let tile_index = 0; tile_index < tiles.length; tile_index++) {
+        // add interactions to the tile
+        tiles[tile_index].setInteractive;
+
+        // add function to print row/col when tile clicked
+        // tiles[tile_index].on('pointerup', function (pointer) {  
+        //     console.log('Touching tile (' + tile_index + ')');
+        //     console.log('(row, col) : (' + tiles[tile_index].row_pos + ', ' + tiles[tile_index].col_pos + ')');
+        // })
+        tiles[tile_index].on('pointerover', function (pointer) {  
+            console.log('Tile (' + tile_index + ') HOVERED');
+            tiles[tile_index].is_hovered_on = 1;
+            // tiles[tile_index].setScale(0.1);
+        })
+
+        // once pointer no longer over a tile
+        tiles[tile_index].on('pointerout', function (pointer) {  
+            console.log('Tile (' + tile_index + ') UNHOVERED \n' );
+            // tiles[tile_index].clearTint();
+            // tiles[tile_index].setScale(0.4);
+            tiles[tile_index].is_hovered_on = 0;
+        })
+    }
+}
+
+</script>
+</head>
+<body>
+</body>
+</html>

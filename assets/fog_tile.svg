@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   version="1.1"
+   id="svg2"
+   width="577"
+   height="500"
+   viewBox="0 0 577 500"
+   sodipodi:docname="fog_tile.svg"
+   inkscape:export-filename="C:\wamp64\www\assets\village.png"
+   inkscape:export-xdpi="96"
+   inkscape:export-ydpi="96"
+   inkscape:version="1.1.1 (3bf5ae0d25, 2021-09-20)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs6" />
+  <sodipodi:namedview
+     id="namedview4"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     showgrid="false"
+     inkscape:zoom="0.812"
+     inkscape:cx="287.56158"
+     inkscape:cy="286.33005"
+     inkscape:window-width="1920"
+     inkscape:window-height="1001"
+     inkscape:window-x="-29600"
+     inkscape:window-y="-32000"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="g8" />
+  <g
+     inkscape:groupmode="layer"
+     inkscape:label="Image"
+     id="g8">
+    <ellipse
+       style="fill:#504416"
+       id="path382"
+       cx="286.33008"
+       cy="251.23152"
+       rx="90.517242"
+       ry="49.261086" />
+    <rect
+       style="fill:#aa8800;stroke-width:0.876424"
+       id="rect508"
+       width="100.98522"
+       height="76.622658"
+       x="236.4532"
+       y="180.76651" />
+    <path
+       sodipodi:type="star"
+       style="fill:#decd87"
+       id="path600"
+       inkscape:flatsided="true"
+       sodipodi:sides="3"
+       sodipodi:cx="293.57474"
+       sodipodi:cy="125.20053"
+       sodipodi:r1="65.687859"
+       sodipodi:r2="32.843929"
+       sodipodi:arg1="0.5307735"
+       sodipodi:arg2="1.577971"
+       inkscape:rounded="0"
+       inkscape:randomized="0"
+       d="M 350.22498,158.45176 236.4532,157.63547 294.04603,59.514363 Z"
+       inkscape:transform-center-x="0.26199468"
+       inkscape:transform-center-y="-10.874184"
+       transform="matrix(1.1118858,0,0,0.67052292,-38.771015,86.111082)" />
+  </g>
+</svg>
